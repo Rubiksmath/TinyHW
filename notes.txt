@@ -1,0 +1,45 @@
+Using compiler flags or something, we got the size down to 704 bytes.
+
+Looking at the PE structure...
+First:
+
+
+MS-DOS Compatible EXE Header
+DOS Stub
+Rich Header
+PE Header
+    PE Signature
+    COFF/Image File Header
+    Optional Header
+        Standard Fields
+        Windows Specific Fields
+        Data Directories
+Section Table (Section Headers)
+
+
+So the COFF/Image file header needs to contain the size of the optional header, the characteristics (I think), and perhaps the machine type. More than that, I am not sure.
+
+Import directory table:
+The entries are so-called "import directory entries"
+One import directory entry is present per DLL that is referred to. 
+Each directory (i.e. table row) has size of 0x14 and contains:
+    RVA of the import lookup table for *THIS* DLL (OriginalFirstThunk)
+    Time/Date stamp (which is 0 until image bound)
+    Forwarder Chain (honestly no clue, but just set to 0 ig)
+    RVA of DLL name
+    RVA of import address table (FirstThunk)
+So iatbl gets patched with addresses by loader, but initially in standard configuration contains the same contents as the import lookup table
+The import lookup table is a list of all imports where each import is given RVA data if needed, or else an ordinal.
+
+
+
+
+
+
+
+
+Fields to test if they break: lol 
+
+You could do a whole heap of stuff here, like with hello world instead of pointing to the hello world in the file, point to something like ur bios lol
+
+

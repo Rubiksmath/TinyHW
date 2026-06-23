@@ -1,0 +1,190 @@
+     1                                  BITS 32
+     2                                  
+     3                                  IMAGE_BASE equ 0x690000
+     4                                  org 0
+     5                                  
+     6                                  %define align(n, r) (((n+(r-1))/r)*r)
+     7                                  
+     8                                  ; DOS header
+     9                                  DOS_HEADER:
+    10 00000000 4D5A                        dw "MZ"                 ; DOS Magic number
+    11 00000002 0000                        dw 0                    ; [UNUSED/FREE] Bytes on last page
+    12 00000004 0000                        dw 0                    ; [UNUSED/FREE] Pages in File
+    13 00000006 0000                        dw 0                    ; [UNUSED/FREE] Relocations
+    14 00000008 0000                        dw 0                    ; [UNUSED/FREE] Size of header (paragraphs)
+    15 0000000A 0000                        dw 0                    ; [UNUSED/FREE] Minimum memory (paragraphs?)
+    16 0000000C 0000                        dw 0                    ; [UNUSED/FREE] Maximum memory (paragraphs?)
+    17 0000000E 0000                        dw 0                    ; [UNUSED/FREE] Initial stack segment value (relative)
+    18 00000010 0000                        dw 0                    ; [UNUSED/FREE] Initial stack pointer value
+    19 00000012 0000                        dw 0                    ; [UNUSED/FREE] Checksum
+    20 00000014 0000                        dw 0                    ; [UNUSED/FREE] Initial instruction pointer value
+    21 00000016 0000                        dw 0                    ; [UNUSED/FREE] Initial code segment value (relative)
+    22 00000018 0000                        dw 0                    ; [UNUSED/FREE] Address of DOS reloation table
+    23 0000001A 0000                        dw 0                    ; [UNUSED/FREE] Overlay number
+    24 0000001C 0000<rep 4h>                times 4 dw 0            ; [UNUSED/FREE] Reserved words (4)
+    25 00000024 0000                        dw 0                    ; [UNUSED/FREE] OEM identifier
+    26 00000026 0000                        dw 0                    ; [UNUSED/FREE] OEM information
+    27 00000028 0000<rep Ah>                times 10 dw 0           ; [UNUSED/FREE] Reserved words part 2 (10)
+    28 0000003C [40000000]                  dd PE_HEADER            ; Address of beginning of PE header
+    29                                  
+    30                                  ; End of DOS header
+    31                                  
+    32                                  ; Start of PE header
+    33                                  PE_HEADER:
+    34 00000040 50450000                    dw "PE", 0              ; PE signature "PE\0\0"
+    35                                  
+    36                                  ; Mandatory COFF/Image file header
+    37                                  COFF_FILE_HEADER:
+    38 00000044 4C01                        dw 0x14C                ; Machine (Intel 386)
+    39 00000046 0100                        dw 1                    ; NumberOfSections (1)
+    40 00000048 00000000                    dd 0                    ; [UNUSED/FREE] TimeDateStamp
+    41 0000004C 00000000                    dd 0                    ; [UNUSED/FREE] PointerToSymbolTable
+    42 00000050 00000000                    dd 0                    ; [UNUSED/FREE] NumberOfSymbols
+    43 00000054 7000                        dw OPTIONAL_HEADER_SIZE ; SizeOfOptionalHeader
+    44 00000056 0200                        dw 2                    ; [RESTRICTED BUT MODIFIABLE] Characteristics (only need the 2nd least significant bit set)
+    45                                  
+    46                                  ; Mandatory image file "optional header"
+    47                                  IMAGE_OPTIONAL_HEADER:
+    48                                      ; Mandatory "optional header" standard fields
+    49 00000058 0B01                        dw 0x10B                ; Magic number (indicates PE32)
+    50 0000005A 00                          db 0                    ; [UNUSED/FREE] MajorLinkerVersion
+    51 0000005B 00                          db 0                    ; [UNUSED/FREE] MinorLinkerVersion
+    52 0000005C 00000000                    dd 0                    ; [UNUSED/FREE] Total size of code sections
+    53 00000060 00000000                    dd 0                    ; [UNUSED/FREE] Total size of initialised data sections
+    54 00000064 00000000                    dd 0                    ; [UNUSED/FREE] Total size of uninitialised data sections
+    55 00000068 [07010000]                  dd ENTRY_POINT          ; RVA of entry point (Note: needs to be calculated carefully with respect to what is in the section headers. Address in file = RVA - VA + pointer to raw data in section header.)
+    56 0000006C 00000000                    dd 0                    ; [UNUSED/FREE] RVA of beginning of code section when loaded
+    57 00000070 00000000                    dd 0                    ; [UNUSED/FREE] RVA of beginning of data section when loaded
+    58                                  
+    59                                      ; Mandatory Windows-specific "optional header" fields
+    60                                  
+    61 00000074 00006900                    dd IMAGE_BASE           ; My funny preferred base of image
+    62 00000078 10000000                    dd 0x10                 ; Alignment of sections when loaded into memory
+    63 0000007C 10000000                    dd 0x10                 ; Alignment of raw data of sections when loaded into memory (honestly not sure on the difference)
+    64                                                              ; Listed requirements for these two fields are: 
+    65                                                              ; SectionAlignment >= FileAlignment
+    66                                                              ; FileAlignment must be power of 2
+    67                                                              ; If SectionAlignment is < page size, then FileAlignment == SectionAlignment.
+    68                                                              ; To be honest, if the loader patches something in to fix these fields when I go to overlap these stuff that would be funny.
+    69 00000080 0000                        dw 0                    ; [UNUSED/FREE] Major operating system version
+    70 00000082 0000                        dw 0                    ; [UNUSED/FREE] Minor operating system version
+    71 00000084 0000                        dw 0                    ; [UNUSED/FREE] Major image version
+    72 00000086 0000                        dw 0                    ; [UNUSED/FREE] Minor image version
+    73 00000088 0400                        dw 4                    ; [RESTRICTED BUT MODIFIABLE] Major subsystem version (4, 5, or 6) 
+    74 0000008A 0000                        dw 0                    ; [RESTRICTED BUT MODIFIABLE] Minor subsystem version (free if previous field 4) 
+    75 0000008C 00000000                    dd 0                    ; [UNUSED/FREE] Win32 version field
+    76 00000090 70010000                    dd FILE_SIZE            ; [RESTRICTED BUT MODIFIABLE] Size of image total when loaded into memory (seems to let me go anything F0 or higher, also don't go higher than 0x70000000)
+    77                                                              ; In reality it seems that it can be whatever you want provided it's larger than perhaps size of code or something?
+    78 00000094 00000000                    dd 0                    ; [RESTRICTED BUT MODIFIABLE] Size of headers total in the file, rounded up to a multiple of FileAlignment (seems to let me go anything < claimed image size in previous field) 
+    79 00000098 00000000                    dd 0                    ; [UNUSED/FREE] Checksum, seemingly unused
+    80 0000009C 0300                        dw 3                    ; Subsystem, 3 indicates Windows CUI
+    81 0000009E 0000                        dw 0                    ; [RESTRICTED BUT MODIFIABLE] DLL Characterstics (compiler generated 0x8500)
+    82 000000A0 00000000                    dd 0                    ; [RESTRICTED BUT MODIFIABLE] Size of stack reserve (don't go too big, i.e. maybe keep below 0x70000000) 
+    83 000000A4 00000000                    dd 0                    ; [RESTRICTED BUT MODIFIABLE] Size of stack commit (don't go too big, i.e. maybe keep below 0x70000000) 
+    84 000000A8 00000000                    dd 0                    ; [RESTRICTED BUT MODIFIABLE] Size of heap reserve (don't go too big, i.e. maybe keep below 0x70000000)
+    85 000000AC 00000000                    dd 0                    ; [RESTRICTED BUT MODIFIABLE] Size of heap commit (don't go too big, i.e. maybe keep below 0x70000000)
+    86 000000B0 00000000                    dd 0                    ; [UNUSED/FREE] Loader flags
+    87 000000B4 02000000                    dd 0x2                  ; Number of entries in the data directory table, here only 2 are needed
+    88                                  
+    89                                      ; Optional header data directories
+    90                                  
+    91 000000B8 00000000                    dd 0                    ; [UNUSED/FREE] Export table RVA
+    92 000000BC 00000000                    dd 0                    ; [UNUSED/FREE] Export table size
+    93 000000C0 [23010000]                  dd IMPORT_DIRECTORY     ; Import table RVA
+    94 000000C4 00000000                    dd 0                    ; [UNUSED/FREE] Import table size
+    95                                  
+    96                                      ; End of PE header
+    97                                  
+    98                                  OPTIONAL_HEADER_SIZE equ $ - IMAGE_OPTIONAL_HEADER
+    99                                  
+   100                                  ; Section table
+   101                                  SECTION_TABLE:
+   102 000000C8 0000000000000000            dq 0                    ; [UNUSED/FREE] Name of first section, padded to 8 bytes
+   103 000000D0 7C000000                    dd MAIN_SIZE            ; [RESTRICTED BUT MODIFIABLE] Virtual size of section when loaded into memory. 
+   104                                                              ; If this is larger than the size of the raw data of the section, this gets zero padded.
+   105                                                              ; (don't go too big, i.e. keep below size of raw data field)
+   106 000000D4 [F0000000]                  dd IMPORT_ADDRESS_TABLE ; [IN PRINCIPLE MODIFIABLE] Virtual address of section when loaded into memory, i.e. the offset from image base when loaded
+   107 000000D8 80000000                    dd CODE_SIZE            ; [RESTRICTED BUT MODIFIABLE] Size of the initialised data on disk for this section. Must be a multiple of file alignment from the optional header (wut), and this parameter is rounded, while virtual size is not.
+   108                                                              ; Looks like it just has to be at least virtual size idk (It let me go as low as 0x41, and also up very high up to 0xFFFFFF0F)
+   109 000000DC [F0000000]                  dd IMPORT_ADDRESS_TABLE ; [IN PRINCIPLE MODIFIABLE] File pointer to the first page of the section (try to modify in conjunction with virtual address)
+   110 000000E0 00000000                    dd 0                    ; [UNUSED/FREE] Pointer to relocations
+   111 000000E4 00000000                    dd 0                    ; [UNUSED/FREE] Pointer to line numbers
+   112 000000E8 0000                        dw 0                    ; [UNUSED/FREE] Number of relocations
+   113 000000EA 0000                        dw 0                    ; [UNUSED/FREE] Number of line numbers
+   114 000000EC 00000000                    dd 0                    ; [UNUSED/FREE] Section characteristics (Interesting that it lets me modify this freely?)
+   115                                  
+   116                                  HEADER_SIZE equ $ - $$
+   117                                  
+   118                                  ; Start of code
+   119                                  CODE:
+   120                                  
+   121                                  ; Import address table
+   122                                  IMPORT_ADDRESS_TABLE:
+   123                                                              ; Structure and content of import address table is identical to the import lookup table until the file is bound by the loader. 
+   124                                                              ; The addresses here get patched to the memory addresses of the imported symbols.
+   125 000000F0 1B060080                    dd 0x8000061B      ; RVA of the entry into the hint/name table for this import
+   126 000000F4 00000000                    dd 0                    ; Null terminator entry
+   127                                  
+   128                                  IATBL_SIZE equ $ - IMPORT_ADDRESS_TABLE
+   129                                  
+   130                                  ; Initialised data store
+   131                                  DATA:
+   132 000000F8 48656C6C6F2C20576F-         db "Hello, World!"      ; String to print
+   132 00000101 726C6421           
+   133 00000105 0D0A                        db `\r\n`               ; Line breaks
+   134                                  
+   135                                  ; Entry point
+   136                                  ENTRY_POINT:
+   137 00000107 6A00                        push 0;                                     ; Fifth argument to WriteFile, long pointer to overlap status
+   138 00000109 68[8F016900]                push IMAGE_BASE + DLL_NAME_1 + 0x30;        ; Fourth last argument to WriteFile, long pointer to number of bytes written
+   139                                                                                  ; I just made this be something past the file in memory which is probably ok since we allocate a whole page for this
+   140 0000010E 6A0F                        push 0xF;                                   ; Third argument to WriteFile, number of bytes to write, which is just 0xF (15)
+   141 00000110 68[F8006900]                push IMAGE_BASE + DATA;                     ; Second argument to WriteFile, long pointer to buffer, which is just at RVA of DATA
+   142 00000115 8B4310                      mov eax, [ebx + 0x10];                      ; Calculating handle by looking into PEB idk I just copied the implementation of the kernel DLL don't ask
+   143 00000118 8B401C                      mov eax, [eax + 0x1C];
+   144 0000011B 50                          push eax;                                   ; First argument to WriteFile, the handle of the "file" or "stream" to write to
+   145 0000011C FF15[F0006900]              call [IMAGE_BASE + IMPORT_ADDRESS_TABLE];   ; Call the thing
+   146 00000122 C3                          ret;                                        ; Only effect is to adjust stack pointer (inner function that we call actually resets the stack pointer for us which is so kind)
+   147                                                                                  ; And to pop the top of the stack into the instruction pointer
+   148                                  
+   149                                  ; Import directory/table
+   150                                  IMPORT_DIRECTORY:
+   151                                                              ; Entry 1 (KERNEL32.DLL)
+   152 00000123 00000000                    dd 0                    ; [UNUSED/FREE] RVA of import lookup table for entry 1 (place to look for data)
+   153 00000127 00000000                    dd 0                    ; [UNUSED/FREE] Zeroed Time/Date stamp for use as loader patches it
+   154 0000012B 00000000                    dd 0                    ; [UNUSED/FREE] Forwarder chain, whatever that means
+   155 0000012F [5F010000]                  dd DLL_NAME_1           ; RVA of a string containing the DLL name for this import
+   156 00000133 [F0000000]                  dd IMPORT_ADDRESS_TABLE ; RVA of import address table for entry 1 (place to write the results to)
+   157 00000137 00000000<rep 5h>            times 5 dd 0            ; Full null entry indicating end of table
+   158                                  
+   159                                  IMPORT_DIRECTORY_SIZE equ $ - IMPORT_DIRECTORY
+   160                                  
+   161                                  ; Import lookup table for the first DLL
+   162                                  IMPORT_LOOKUP_TABLE_1:
+   163 0000014B 1B060080                    dd 0x8000061B                    ; [UNUSED/FREE/USEDAFTERLOAD?] RVA of the hint/name table entry for this import, with MSB set to 0 to indicate import by name
+   164 0000014F 00000000                    dd 0                    ; [UNUSED/FREE/USEDAFTERLOAD?] Null entry signifying terminator
+   165                                  
+   166                                  ; Hint/name table
+   167                                  HINT_NAME_TABLE:
+   168                                                              ; Entry 1 (WriteFile)
+   169 00000153 0000                        dw 0                    ; [UNUSED/FREE] Function ordinal (loader attempts to match this first)
+   170 00000155 577269746546696C65-         db "WriteFile", 0       ; Function name (loader only uses if match fails)
+   170 0000015E 00                 
+   171                                  
+   172                                  ; Name of DLL 1
+   173                                  
+   174                                  DLL_NAME_1:
+   175 0000015F 4B45524E454C33322E-         db "KERNEL32.dll", 0    ; Name of DLL 1 from the import directory/table
+   175 00000168 646C6C00           
+   176                                  
+   177                                  MAIN_SIZE equ $ - CODE
+   178                                  
+   179 0000016C 00<rep 4h>              times align($ - $$, 16) - ($ - $$) db 0; Padding to end of section
+   180                                  
+   181                                  CODE_SIZE equ $ - CODE
+   182                                  
+   183                                  FILE_SIZE equ $ - $$
+   184                                  
+   185                                      
+   186                                  
+   187                                      
