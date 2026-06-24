@@ -122,7 +122,7 @@
    122                                  IMPORT_ADDRESS_TABLE:
    123                                                              ; Structure and content of import address table is identical to the import lookup table until the file is bound by the loader. 
    124                                                              ; The addresses here get patched to the memory addresses of the imported symbols.
-   125 000000F0 1B060080                    dd 0x8000061B      ; RVA of the entry into the hint/name table for this import
+   125 000000F0 [53010000]                  dd HINT_NAME_TABLE      ; RVA of the entry into the hint/name table for this import
    126 000000F4 00000000                    dd 0                    ; Null terminator entry
    127                                  
    128                                  IATBL_SIZE equ $ - IMPORT_ADDRESS_TABLE
@@ -161,7 +161,7 @@
    160                                  
    161                                  ; Import lookup table for the first DLL
    162                                  IMPORT_LOOKUP_TABLE_1:
-   163 0000014B 1B060080                    dd 0x8000061B                    ; [UNUSED/FREE/USEDAFTERLOAD?] RVA of the hint/name table entry for this import, with MSB set to 0 to indicate import by name
+   163 0000014B 00000000                    dd 0                    ; [UNUSED/FREE/USEDAFTERLOAD?] RVA of the hint/name table entry for this import, with MSB set to 0 to indicate import by name
    164 0000014F 00000000                    dd 0                    ; [UNUSED/FREE/USEDAFTERLOAD?] Null entry signifying terminator
    165                                  
    166                                  ; Hint/name table
