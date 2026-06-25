@@ -100,8 +100,7 @@ CODE_FRAGMENT_3:
     dd 0                    ; [RESTRICTED BUT MODIFIABLE] Size of headers total in the file, rounded up to a multiple of FileAlignment (seems to let me go anything < claimed image size in previous field) 
     dd 0                    ; [UNUSED/FREE] Checksum, seemingly unused
     dw 3                    ; Subsystem, 3 indicates Windows CUI
-    dw 0                    ; [RESTRICTED BUT MODIFIABLE] DLL Characterstics (compiler generated 0x8500)
-;DATA:                                                                                        
+    dw 0                    ; [RESTRICTED BUT MODIFIABLE] DLL Characterstics (compiler generated 0x8500)                                                                                      
     dd 0                    ; [RESTRICTED BUT MODIFIABLE] Size of stack reserve (don't go too big, i.e. maybe keep below 0x70000000) 
     dd 0                    ; [RESTRICTED BUT MODIFIABLE] Size of stack commit (don't go too big, i.e. maybe keep below 0x70000000) 
     dd 0                    ; [RESTRICTED BUT MODIFIABLE] Size of heap reserve (don't go too big, i.e. maybe keep below 0x70000000)

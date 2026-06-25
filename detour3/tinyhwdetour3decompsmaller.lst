@@ -1,0 +1,167 @@
+     1                                  BITS 32
+     2                                  
+     3                                  IMAGE_BASE equ 0x400000
+     4                                  org 0
+     5                                  
+     6                                  %define align(n, r) (((n+(r-1))/r)*r)
+     7                                  
+     8                                  ; DOS header
+     9                                  DOS_HEADER:
+    10 00000000 4D5A                        dw "MZ"                 ; DOS Magic number
+    11 00000002 9000                        dw 0x90                 ; Bytes on last page
+    12 00000004 0300                        dw 0x03                 ; Pages in File
+    13 00000006 0000                        dw 0                    ; Relocations
+    14 00000008 0400                        dw 0x04                 ; Size of header (paragraphs)
+    15 0000000A 0000                        dw 0                    ; Minimum memory (paragraphs?)
+    16 0000000C FFFF                        dw 0xFFFF               ; Maximum memory (paragraphs?)
+    17 0000000E 0000                        dw 0                    ; Initial stack segment value (relative)
+    18 00000010 B800                        dw 0xB8                 ; Initial stack pointer value
+    19 00000012 0000                        dw 0                    ; Checksum
+    20 00000014 0000                        dw 0                    ; Initial instruction pointer value
+    21 00000016 0000                        dw 0                    ; Initial code segment value (relative)
+    22 00000018 4000                        dw 0x40                 ; Address of DOS reloation table
+    23 0000001A 0000                        dw 0                    ; Overlay number
+    24 0000001C 0000<rep 4h>                times 4 dw 0            ; Reserved words (4)
+    25 00000024 0000                        dw 0                    ; OEM identifier
+    26 00000026 0000                        dw 0                    ; OEM information
+    27 00000028 0000<rep Ah>                times 10 dw 0           ; Reserved words part 2 (10)
+    28 0000003C [B0000000]                  dd PE_HEADER            ; Address of beginning of PE header
+    29                                  
+    30                                  DOS_STUB:
+    31 00000040 0E                          db 0x0E                 ; x86_16 push cs
+    32 00000041 1F                          db 0x1F                 ; x86_16 pop ds
+    33 00000042 BA0E00                      db 0xBA, 0x0E, 0x00     ; x86_16 mov dx, 0x0E
+    34 00000045 B409                        db 0xB4, 0x09           ; x86_16 mov ah, 0x09
+    35 00000047 CD21                        db 0xCD, 0x21           ; x86_16 int 0x21 // This whole segment basically says print to screen the string at ds:dx until reaching a $. 
+    36 00000049 B8014C                      db 0xB8, 0x01, 0x4C     ; x86_16 mov ax, 0x4C01
+    37 0000004C CD21                        db 0xCD, 0x21           ; x86_16 int 0x21
+    38 0000004E 546869732070726F67-         db "This program "      ; DOS stub message
+    38 00000057 72616D20           
+    39 0000005B 63616E6E6F74206265-         db "cannot be run "     ; DOS stub message (cont.)
+    39 00000064 2072756E20         
+    40 00000069 696E20444F53206D6F-         db "in DOS mode."       ; DOS stub message (cont.)
+    40 00000072 64652E             
+    41 00000075 0D0D0A24                    db `\r\r\n$`            ; End of DOS stub message
+    42 00000079 00<rep 7h>                  times 7 db 0            ; Align to specific boundary (no idea if 8 or 16 or 32 or 64 or 128 byte boundary)
+    43                                  
+    44                                  RICH_HEADER:
+    45 00000080 114333DF                    dd 0xDF334311           ; Masked signature, unmasked this reads "DanS"
+    46 00000084 55225D8C<rep 3h>            times 3 dd 0x8C5D2255   ; 3 masked DWORDs of 0 for padding
+    47 00000090 D859598D                    dd 0x8D5959D8           ; Masked words for product ID and build ID, unmasked this says product ID = 260 (Utc1900_C), build ID = 31629 (Visual Studio 2015 14.00)
+    48 00000094 54225D8C                    dd 0x8C5D2254           ; Masked use count, unmasked this reads 3
+    49 00000098 D8595F8D                    dd 0x8D5F59D8           ; Masked words for product ID and build ID, unmasked this says product ID = 258 (Linker1400), build ID = 31629 (Visual Studio 2015 14.00)
+    50 0000009C 54225D8C                    dd 0x8C5D2254           ; Masked use count, unmasked this reads 1
+    51 000000A0 52696368                    dd "Rich"               ; Rich header signature
+    52 000000A4 55225D8C                    dd 0x8C5D2255           ; XOR key for unmasking the rich header
+    53                                  
+    54                                  ; End of DOS header
+    55                                  
+    56 000000A8 0000000000000000        dq 0                        ; Spacing
+    57                                  
+    58                                  ; Start of PE header
+    59                                  PE_HEADER:
+    60 000000B0 50450000                    dw "PE", 0              ; PE signature "PE\0\0"
+    61                                  
+    62                                  ; Mandatory COFF/Image file header
+    63                                  COFF_FILE_HEADER:
+    64 000000B4 4C01                        dw 0x14C                ; Machine (Intel 386)
+    65 000000B6 0100                        dw 1                    ; NumberOfSections (1)
+    66 000000B8 E7B03B6A                    dd 0x6A3BB0E7           ; TimeDateStamp (Wednesday, 24.06.2026 10:26:47 UTC)
+    67 000000BC 00000000                    dd 0                    ; PointerToSymbolTable [0 for images]
+    68 000000C0 00000000                    dd 0                    ; NumberOfSymbols [0 for images]
+    69 000000C4 A000                        dw OPTIONAL_HEADER_SIZE ; SizeOfOptionalHeader (usually 0xE0 for this type of app cause 32 bit)
+    70 000000C6 0301                        dw 0x103                ; Characteristics (0x01 -> No relocation info present; 0x02 -> executable file; 0x100 -> 32 bit machine)
+    71                                  
+    72                                  ; Mandatory image file "optional header"
+    73                                  IMAGE_OPTIONAL_HEADER:
+    74                                      ; Mandatory "optional header" standard fields
+    75 000000C8 0B01                        dw 0x10B                ; Magic number (indicates PE32)
+    76 000000CA 0E                          db 0xE                  ; MajorLinkerVersion (14)
+    77 000000CB 21                          db 0x21                 ; MinorLinkerVersion (33)
+    78 000000CC 30000000                    dd CODE_SIZE            ; Total size of code sections (48 bytes)
+    79 000000D0 00000000                    dd 0                    ; Total size of initialised data sections (0 bytes)
+    80 000000D4 00000000                    dd 0                    ; Total size of uninitialised data sections (0 bytes)
+    81 000000D8 [B0010000]                  dd ENTRY_POINT          ; RVA of entry point (Note: needs to be calculated carefully with respect to what is in the section headers. Address in file = RVA - VA + pointer to raw data in section header.)
+    82 000000DC [90010000]                  dd CODE                 ; RVA of beginning of code section when loaded
+    83 000000E0 00020000                    dd 0x200                ; RVA of beginning of data section when loaded
+    84                                  
+    85                                      ; Mandatory Windows-specific "optional header" fields
+    86                                  
+    87 000000E4 00004000                    dd IMAGE_BASE           ; My funny preferred base of image
+    88 000000E8 04000000                    dd 0x4                  ; Alignment of sections when loaded into memory
+    89 000000EC 04000000                    dd 0x4                  ; Alignment of raw data of sections when loaded into memory (honestly not sure on the difference)
+    90                                                              ; Listed requirements for these two fields are: SectionAlignment >= FileAlignment, FileAlignment must be power of 2, and if SectionAlignment is < page size, then FileAlignment == SectionAlignment.
+    91                                                              ; To be honest, if the loader patches something in to fix these fields when I go to overlap these stuff that would be funny.
+    92 000000F0 0600                        dw 6                    ; Major operating system version (indicates Windows Vista/Server 2008)
+    93 000000F2 0000                        dw 0                    ; Minor operating system version
+    94 000000F4 0000                        dw 0                    ; Major image version
+    95 000000F6 0000                        dw 0                    ; Minor image version
+    96 000000F8 0600                        dw 6                    ; Major subsystem version
+    97 000000FA 0000                        dw 0                    ; Minor subsystem version
+    98 000000FC 00000000                    dd 0                    ; Reserved field for Win32 version value, though it is claimed this must be 0.
+    99 00000100 C0010000                    dd FILE_SIZE            ; Size of image total when loaded into memory. Claimed that this must be a multiple of section alignment. 
+   100                                                              ; In reality it seems that it can be whatever you want provided it's larger than perhaps size of code or something?
+   101 00000104 90010000                    dd HEADER_SIZE          ; Size of headers total in the file, rounded up to a multiple of FileAlignment
+   102 00000108 00000000                    dd 0                    ; Checksum, seemingly unused
+   103 0000010C 0300                        dw 3                    ; Subsystem, 3 indicates Windows CUI
+   104 0000010E 0085                        dw 0x8500               ; DLL Characterstics, (0x8000 -> TerminalServer aware, 0x400 -> Image does not use SEH, 0x100 -> Image is NX compatible)
+   105 00000110 00001000                    dd 0x100000             ; Size of stack reserve, some sort of something idk
+   106 00000114 00100000                    dd 0x1000               ; Size of stack commit
+   107 00000118 00001000                    dd 0x100000             ; Size of heap reserve
+   108 0000011C 00100000                    dd 0x1000               ; Size of heap commit
+   109 00000120 00000000                    dd 0                    ; Loader flags, apparently must be 0
+   110 00000124 08000000                    dd 0x8                 ; Number of entries in the data directory table, it won't let me go below 8, I don't know why.
+   111                                  
+   112                                      ; Optional header data directories
+   113                                  
+   114 00000128 0000000000000000-           times 8 dq 0;
+   114 00000128 <rep 8h>           
+   115                                  
+   116                                      ; End of PE header
+   117                                  
+   118                                  OPTIONAL_HEADER_SIZE equ $ - IMAGE_OPTIONAL_HEADER
+   119                                  
+   120                                  ; Section table
+   121                                  SECTION_TABLE:
+   122 00000168 2E00000000000000            db ".", 0, 0, 0, 0, 0, 0, 0
+   123                                                              ; Name of first section, padded to 8 bytes (".")
+   124 00000170 23000000                    dd MAIN_SIZE            ; Virtual size of section when loaded into memory. If this is larger than the size of the raw data of the section, this gets zero padded.
+   125 00000174 [90010000]                  dd CODE                 ; Virtual address of section when loaded into memory, i.e. the offset from image base when loaded
+   126 00000178 30000000                    dd CODE_SIZE            ; Size of the initialised data on disk for this section. Must be a multiple of file alignment from the optional header (wut), and this parameter is rounded, while virtual size is not.
+   127                                                              ; Looks like it just has to be at least virtual size idk
+   128 0000017C [90010000]                  dd CODE                 ; File pointer to the first page of the section
+   129 00000180 00000000                    dd 0                    ; Pointer to relocations
+   130 00000184 00000000                    dd 0                    ; Pointer to line numbers
+   131 00000188 0000                        dw 0                    ; Number of relocations
+   132 0000018A 0000                        dw 0                    ; Number of line numbers
+   133 0000018C 20000060                    dd 0x60000020           ; Section characteristics (0x20 -> contains executable code; 0x20000000 -> can be executed as code; 0x40000000 -> can be read)
+   134                                  
+   135                                  HEADER_SIZE equ $ - $$
+   136                                  
+   137                                  ; Start of code
+   138                                  CODE:
+   139                                  
+   140                                  
+   141                                  ; Initialised data store
+   142                                  DATA:
+   143                                      ; Weird data that I don't know what it is doing
+   144 00000190 18000000                    dd 0x18                 ;
+   145 00000194 02800280                    dd 0x80028002           ;
+   146 00000198 00000000                    dd 0                    ;
+   147 0000019C 00000000                    dd 0                    ;
+   148 000001A0 E8010000                    dd 0x1E8                ;
+   149 000001A4 08000000                    dd 8                    ;
+   150 000001A8 F0010000                    dd 0x1F0                ;
+   151 000001AC 03000000                    dd 3                    ;
+   152                                  
+   153                                  ; Entry point
+   154                                  ENTRY_POINT:
+   155 000001B0 C20000                      ret 0;
+   156                                  
+   157                                  MAIN_SIZE equ $ - CODE
+   158                                  
+   159 000001B3 00<rep Dh>              times align($ - $$, 16) - ($ - $$) db 0; Padding to end of section
+   160                                  
+   161                                  CODE_SIZE equ $ - CODE
+   162                                  times align($ - $$, 16) - ($ - $$) db 0;
+   163                                  FILE_SIZE equ $ - $$
