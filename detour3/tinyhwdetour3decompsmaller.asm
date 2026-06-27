@@ -41,19 +41,8 @@ DOS_STUB:
     db `\r\r\n$`            ; End of DOS stub message
     times 7 db 0            ; Align to specific boundary (no idea if 8 or 16 or 32 or 64 or 128 byte boundary)
 
-RICH_HEADER:
-    dd 0xDF334311           ; Masked signature, unmasked this reads "DanS"
-    times 3 dd 0x8C5D2255   ; 3 masked DWORDs of 0 for padding
-    dd 0x8D5959D8           ; Masked words for product ID and build ID, unmasked this says product ID = 260 (Utc1900_C), build ID = 31629 (Visual Studio 2015 14.00)
-    dd 0x8C5D2254           ; Masked use count, unmasked this reads 3
-    dd 0x8D5F59D8           ; Masked words for product ID and build ID, unmasked this says product ID = 258 (Linker1400), build ID = 31629 (Visual Studio 2015 14.00)
-    dd 0x8C5D2254           ; Masked use count, unmasked this reads 1
-    dd "Rich"               ; Rich header signature
-    dd 0x8C5D2255           ; XOR key for unmasking the rich header
-
 ; End of DOS header
 
-dq 0                        ; Spacing
 
 ; Start of PE header
 PE_HEADER:
@@ -85,8 +74,8 @@ IMAGE_OPTIONAL_HEADER:
     ; Mandatory Windows-specific "optional header" fields
 
     dd IMAGE_BASE           ; My funny preferred base of image
-    dd 0x4                  ; Alignment of sections when loaded into memory
-    dd 0x4                  ; Alignment of raw data of sections when loaded into memory (honestly not sure on the difference)
+    dd 0x800                  ; Alignment of sections when loaded into memory
+    dd 0x800                  ; Alignment of raw data of sections in image file (honestly not sure on the difference)
                             ; Listed requirements for these two fields are: SectionAlignment >= FileAlignment, FileAlignment must be power of 2, and if SectionAlignment is < page size, then FileAlignment == SectionAlignment.
                             ; To be honest, if the loader patches something in to fix these fields when I go to overlap these stuff that would be funny.
     dw 6                    ; Major operating system version (indicates Windows Vista/Server 2008)
@@ -107,11 +96,9 @@ IMAGE_OPTIONAL_HEADER:
     dd 0x100000             ; Size of heap reserve
     dd 0x1000               ; Size of heap commit
     dd 0                    ; Loader flags, apparently must be 0
-    dd 0x8                 ; Number of entries in the data directory table, it won't let me go below 8, I don't know why.
+    dd 0                    ; Number of entries in the data directory table, of which there are none here.
 
-    ; Optional header data directories
-
-    times 8 dq 0;
+    ; Optional header data directories (empty)
 
     ; End of PE header
 
@@ -137,27 +124,14 @@ HEADER_SIZE equ $ - $$
 ; Start of code
 CODE:
 
-
-; Initialised data store
-DATA:
-    ; Weird data that I don't know what it is doing
-    dd 0x18                 ;
-    dd 0x80028002           ;
-    dd 0                    ;
-    dd 0                    ;
-    dd 0x1E8                ;
-    dd 8                    ;
-    dd 0x1F0                ;
-    dd 3                    ;
-
 ; Entry point
 ENTRY_POINT:
     ret 0;
 
 MAIN_SIZE equ $ - CODE
 
-times align($ - $$, 16) - ($ - $$) db 0; Padding to end of section
+times align($ - PE_HEADER, 268) - ($ - PE_HEADER) db 0; Padding to hit the minimum 
 
 CODE_SIZE equ $ - CODE
-times align($ - $$, 16) - ($ - $$) db 0;
+times align($ - $$, 16) - ($ - $$) db 0; Pad to boundary cause I'm nice.
 FILE_SIZE equ $ - $$
