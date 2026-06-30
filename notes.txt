@@ -42,4 +42,8 @@ Fields to test if they break: lol
 
 You could do a whole heap of stuff here, like with hello world instead of pointing to the hello world in the file, point to something like ur bios lol
 
+Most fields can be modified, even those that are not 0. Pointers can be modified provided that the data within them is moved accordingly or sourced elsewhere. Sizes are semi-free, etc.
+I may want to come up with colour codes or classes of structures about whether they are fully free, pointers, can be moved, with relation to what, etc.
+
+
 

@@ -1,0 +1,99 @@
+     1                                  BITS 32
+     2                                  
+     3                                  IMAGE_BASE equ 0x400000
+     4                                  org 0
+     5                                  
+     6                                  %define align(n, r) (((n+(r-1))/r)*r)
+     7                                  
+     8                                  ; DOS header
+     9                                  DOS_HEADER:
+    10 00000000 4D5A                        dw "MZ"                 ; DOS Magic number
+    11 00000002 52                          push edx;
+    12 00000003 45                          inc ebp;
+    13 00000004 54                          push esp;
+    14 00000005 5E                          pop esi;
+    15 00000006 51                          push ecx;
+    16 00000007 58                          pop eax;
+    17 00000008 3420                        xor al, 0x20
+    18 0000000A 343E                        xor al, 0x3E;
+    19 0000000C 50                          push eax;
+    20 0000000D 5C                          pop esp;
+    21 0000000E 6A24                        push 0x24;
+    22 00000010 58                          pop eax;
+    23 00000011 2C61                        sub al, 0x61;
+    24 00000013 50                          push eax;
+    25 00000014 56                          push esi;
+    26 00000015 5C                          pop esp;
+    27 00000016 00<rep 26h>                 times 60 - ($ - DOS_HEADER) db 0;
+    28 0000003C [40000000]                  dd PE_HEADER            ; Address of beginning of PE header
+    29                                  
+    30                                  ; End of DOS header
+    31                                  
+    32                                  
+    33                                  ; Start of PE header
+    34                                  PE_HEADER:
+    35 00000040 50450000                    dw "PE", 0              ; PE signature "PE\0\0"
+    36                                  
+    37                                  ; Mandatory COFF/Image file header
+    38                                  COFF_FILE_HEADER:
+    39 00000044 4C01                        dw 0x14C                ; Machine (Intel 386)
+    40 00000046 0000                        dw 0                    ; NumberOfSections (0)
+    41 00000048 00000000                    dd 0                    ; TimeDateStamp (Wednesday, 24.06.2026 10:26:47 UTC)
+    42 0000004C 00000000                    dd 0                    ; PointerToSymbolTable [0 for images]
+    43 00000050 00000000                    dd 0                    ; NumberOfSymbols [0 for images]
+    44 00000054 6800                        dw 0x68                 ; SizeOfOptionalHeader (usually 0xE0 for this type of app cause 32 bit)
+    45 00000056 5200                        dw 0x52                 ; Characteristics (0x01 -> No relocation info present; 0x02 -> executable file; 0x100 -> 32 bit machine)
+    46                                  
+    47                                  ; Mandatory image file "optional header"
+    48                                  IMAGE_OPTIONAL_HEADER:
+    49                                      ; Mandatory "optional header" standard fields
+    50 00000058 0B01                        dw 0x10B                ; Magic number (indicates PE32)
+    51 0000005A 00                          db 0                    ; MajorLinkerVersion
+    52 0000005B 00                          db 0                    ; MinorLinkerVersion
+    53 0000005C 00000000                    dd 0                    ; Total size of code sections (0 bytes)
+    54 00000060 00000000                    dd 0                    ; Total size of initialised data sections (0 bytes)
+    55 00000064 00000000                    dd 0                    ; Total size of uninitialised data sections (0 bytes)
+    56 00000068 00000000                    dd 0                    ; RVA of entry point (literally 0 here lol)
+    57 0000006C 00000000                    dd 0                    ; RVA of beginning of code section when loaded
+    58 00000070 00000000                    dd 0                    ; RVA of beginning of data section when loaded
+    59                                  
+    60                                      ; Mandatory Windows-specific "optional header" fields
+    61                                  
+    62 00000074 00004000                    dd IMAGE_BASE           ; My funny preferred base of image
+    63 00000078 40000000                    dd 0x40                 ; Alignment of sections when loaded into memory
+    64 0000007C 40000000                    dd 0x40                 ; Alignment of raw data of sections in image file (honestly not sure on the difference)
+    65                                                              ; Listed requirements for these two fields are: SectionAlignment >= FileAlignment, FileAlignment must be power of 2, and if SectionAlignment is < page size, then FileAlignment == SectionAlignment.
+    66                                                              ; To be honest, if the loader patches something in to fix these fields when I go to overlap these stuff that would be funny.
+    67 00000080 0000                        dw 0                    ; Major operating system version (indicates Windows Vista/Server 2008)
+    68 00000082 0000                        dw 0                    ; Minor operating system version
+    69 00000084 0000                        dw 0                    ; Major image version
+    70 00000086 0000                        dw 0                    ; Minor image version
+    71 00000088 0400                        dw 4                    ; Major subsystem version
+    72 0000008A 0000                        dw 0                    ; Minor subsystem version
+    73 0000008C 00000000                    dd 0                    ; Reserved field for Win32 version value, though it is claimed this must be 0.
+    74 00000090 706A0000                    dd 0x6a70               ; Size of image total when loaded into memory. Claimed that this must be a multiple of section alignment. 
+    75                                                              ; In reality it seems that it can be whatever you want provided it's larger than perhaps size of code or something?
+    76 00000094 00000000                    dd 0                    ; Size of headers total in the file, rounded up to a multiple of FileAlignment
+    77 00000098 00000000                    dd 0                    ; Checksum, seemingly unused
+    78 0000009C 0300                        dw 3                    ; Subsystem, 3 indicates Windows CUI
+    79 0000009E 0000                        dw 0                    ; DLL Characterstics, (0x8000 -> TerminalServer aware, 0x400 -> Image does not use SEH, 0x100 -> Image is NX compatible)
+    80 000000A0 00000000                    dd 0                    ; Size of stack reserve, some sort of something idk
+    81 000000A4 00000000                    dd 0                    ; Size of stack commit
+    82 000000A8 00000000                    dd 0                    ; Size of heap reserve
+    83 000000AC 00000000                    dd 0                    ; Size of heap commit
+    84 000000B0 00000000                    dd 0                    ; Loader flags, apparently must be 0
+    85 000000B4 00000000                    dd 0                    ; Number of entries in the data directory table, of which there are none here.
+    86                                  
+    87                                      ; Optional header data directories (empty)
+    88                                  
+    89                                      ; End of PE header
+    90                                  
+    91                                  OPTIONAL_HEADER_SIZE equ $ - IMAGE_OPTIONAL_HEADER
+    92                                  HEADER_SIZE equ $ - $$
+    93                                  
+    94                                  
+    95 000000B8 00<rep 90h>             times align($ - PE_HEADER, 264) - ($ - PE_HEADER) db 0
+    96                                                              ; Padding to hit the minimum 
+    97 00000148 00<rep 8h>              times align($ - $$, 16) - ($ - $$) db 0
+    98                                                              ; Pad to 16 byte boundary cause I'm nice.
+    99                                  FILE_SIZE equ $ - $$

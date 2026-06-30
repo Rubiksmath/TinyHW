@@ -1,0 +1,153 @@
+nt!MiCreateImageFileMap:
+    fffff806`496a92dc 4055                 push    rbp                                                                  // r9 already = 0000000000000C02
+    fffff806`496a92de 53                   push    rbx
+    fffff806`496a92df 56                   push    rsi
+    fffff806`496a92e0 57                   push    rdi
+    fffff806`496a92e1 4154                 push    r12
+    fffff806`496a92e3 4155                 push    r13
+    fffff806`496a92e5 4156                 push    r14
+    fffff806`496a92e7 4157                 push    r15
+    fffff806`496a92e9 488d6c24c8           lea     rbp, [rsp-38h]
+    fffff806`496a92ee 4881ec38010000       sub     rsp, 138h
+    fffff806`496a92f5 488b0564e05700       mov     rax, qword ptr [ntkrnlmp!__security_cookie (fffff80649c27360)]
+    fffff806`496a92fc 4833c4               xor     rax, rsp
+    fffff806`496a92ff 48894528             mov     qword ptr [rbp+28h], rax
+    fffff806`496a9303 488b85a0000000       mov     rax, qword ptr [rbp+0A0h]
+    fffff806`496a930a 4533e4               xor     r12d, r12d
+    fffff806`496a930d 48894508             mov     qword ptr [rbp+8], rax
+    fffff806`496a9311 0f57c0               xorps   xmm0, xmm0
+    fffff806`496a9314 488b85a8000000       mov     rax, qword ptr [rbp+0A8h]
+    fffff806`496a931b 0f57c9               xorps   xmm1, xmm1
+    fffff806`496a931e 48894510             mov     qword ptr [rbp+10h], rax
+    fffff806`496a9322 418bd9               mov     ebx, r9d
+    fffff806`496a9325 488b85b0000000       mov     rax, qword ptr [rbp+0B0h]
+    fffff806`496a932c 418bf0               mov     esi, r8d
+    fffff806`496a932f 4889442478           mov     qword ptr [rsp+78h], rax
+    fffff806`496a9334 4c8bf1               mov     r14, rcx
+    fffff806`496a9337 488b85b8000000       mov     rax, qword ptr [rbp+0B8h]
+    fffff806`496a933e 4889542450           mov     qword ptr [rsp+50h], rdx
+    fffff806`496a9343 488d5580             lea     rdx, [rbp-80h]
+    fffff806`496a9347 48894518             mov     qword ptr [rbp+18h], rax
+    fffff806`496a934b 48894c2460           mov     qword ptr [rsp+60h], rcx
+    fffff806`496a9350 44896590             mov     dword ptr [rbp-70h], r12d
+    fffff806`496a9354 0f1145a8             movups  xmmword ptr [rbp-58h], xmm0
+    fffff806`496a9358 4c896580             mov     qword ptr [rbp-80h], r12
+    fffff806`496a935c 0f114df8             movups  xmmword ptr [rbp-8], xmm1
+
+    [STEPPED OVER] fffff806`496a9360 e8ebd0ffff           call    ntkrnlmp!FsRtlGetFileSize (fffff806496a6450)  // r9 = 1 now after stepping over
+
+    fffff806`496a9365 85c0           test    eax, eax
+    fffff806`496a9367 0f8829191800   js      ntkrnlmp!MiCreateImageFileMap+0x1819ba (fffff8064982ac96)
+    fffff806`496a936d 44396584       cmp     dword ptr [rbp-7Ch], r12d
+    fffff806`496a9371 0f853b191800   jne     ntkrnlmp!MiCreateImageFileMap+0x1819d6 (fffff8064982acb2)
+    fffff806`496a9377 4c2165c0       and     qword ptr [rbp-40h], r12
+    fffff806`496a937b 418d4c2401     lea     ecx, [r12+1]
+    fffff806`496a9380 8bf9           mov     edi, ecx
+    fffff806`496a9382 4c8965b8       mov     qword ptr [rbp-48h], r12
+    fffff806`496a9386 448bc9         mov     r9d, ecx
+    fffff806`496a9389 4c896598       mov     qword ptr [rbp-68h], r12
+    fffff806`496a938d 488b4c2450     mov     rcx, qword ptr [rsp+50h]
+    fffff806`496a9392 41b800100000   mov     r8d, 1000h
+    fffff806`496a9398 8bd6           mov     edx, esi
+    fffff806`496a939a 4c89642448     mov     qword ptr [rsp+48h], r12
+    fffff806`496a939f 458bfc         mov     r15d, r12d
+    fffff806`496a93a2 4c896588       mov     qword ptr [rbp-78h], r12
+    fffff806`496a93a6 458bec         mov     r13d, r12d
+
+    [STEPPED OVER] fffff806`496a93a9 e8ae050000     call    ntkrnlmp!MiCreateMdl (fffff806496a995c)         // r9 = FFFFEB8000000028 after stepping over
+
+    fffff806`496a93ae 4889442458     mov     qword ptr [rsp+58h], rax
+    fffff806`496a93b3 4885c0         test    rax, rax
+    fffff806`496a93b6 0f840a191800   je      ntkrnlmp!MiCreateImageFileMap+0x1819ea (fffff8064982acc6)
+    fffff806`496a93bc 4c216010       and     qword ptr [rax+10h], r12
+    fffff806`496a93c0 498bce         mov     rcx, r14
+    fffff806`496a93c3 488b4030       mov     rax, qword ptr [rax+30h]
+    fffff806`496a93c7 488945f0       mov     qword ptr [rbp-10h], rax
+
+    [STEPPED OVER] fffff806`496a93cb e81806c4ff     call    ntkrnlmp!CcZeroEndOfLastPage (fffff806492e99e8) // r9 = 7FFFDA0281961768 after stepping over
+
+    fffff806`496a93d0 488d5590       lea     rdx, [rbp-70h]
+    fffff806`496a93d4 498bce         mov     rcx, r14
+
+    [STEPPED OVER] fffff806`496a93d7 e848a5c5ff     call    ntkrnlmp!MiFlushDataSection (fffff80649303924)  // r9 = 000000003FFFFFFF after stepping over
+
+    fffff806`496a93dc 448bf0         mov     r14d, eax
+    fffff806`496a93df 3d540000c0     cmp     eax, 0C0000054h
+    fffff806`496a93e4 0f84f0181800   je      ntkrnlmp!MiCreateImageFileMap+0x1819fe (fffff8064982acda)
+    fffff806`496a93ea 8bc7           mov     eax, edi
+    fffff806`496a93ec 4488642440     mov     byte ptr [rsp+40h], r12b
+    fffff806`496a93f1 394590         cmp     dword ptr [rbp-70h], eax
+    fffff806`496a93f4 0f84ef181800   je      ntkrnlmp!MiCreateImageFileMap+0x181a0d (fffff8064982ace9)
+    fffff806`496a93fa f7c380001000   test    ebx, 100080h
+    fffff806`496a9400 0f85ec181800   jne     ntkrnlmp!MiCreateImageFileMap+0x181a16 (fffff8064982acf2)
+    fffff806`496a9406 4c8b7580       mov     r14, qword ptr [rbp-80h]
+    fffff806`496a940a 448beb         mov     r13d, ebx
+    fffff806`496a940d 4181e500000100 and     r13d, 10000h
+    fffff806`496a9414 0f85fe181800   jne     ntkrnlmp!MiCreateImageFileMap+0x181a3c (fffff8064982ad18)
+    fffff806`496a941a 4585ed         test    r13d, r13d
+    fffff806`496a941d 7540           jne     ntkrnlmp!MiCreateImageFileMap+0x183 (fffff806496a945f)
+    fffff806`496a941f 4c8b6c2460     mov     r13, qword ptr [rsp+60h]
+    fffff806`496a9424 488b55f0       mov     rdx, qword ptr [rbp-10h]
+    fffff806`496a9428 498bcd         mov     rcx, r13
+
+    [STEPPED OVER] fffff806`496a942b e8d4a2c5ff     call    ntkrnlmp!MiCopyHeaderIfResident (fffff80649303704)  // r9 = 8000000000000002 after stepping over
+
+    fffff806`496a9430 3bc7           cmp     eax, edi
+    fffff806`496a9432 0f8414040000   je      ntkrnlmp!MiCreateImageFileMap+0x570 (fffff806496a984c)
+
+    - JUMP TAKEN -
+
+    ntkrnlmp!MiCreateImageFileMap+0x570:
+    fffff806`496a984c b800100000     mov     eax, 1000h                                                         // eax = 0x1000
+    fffff806`496a9851 448bc8         mov     r9d, eax
+    fffff806`496a9854 488945b0       mov     qword ptr [rbp-50h], rax
+    fffff806`496a9858 4c8b6c2458     mov     r13, qword ptr [rsp+58h]
+    fffff806`496a985d e935fcffff     jmp     ntkrnlmp!MiCreateImageFileMap+0x1bb (fffff806496a9497)
+
+    - JUMP TAKEN -
+
+    ntkrnlmp!MiCreateImageFileMap+0x1bb:
+    fffff806`496a9497 41f6450a04     test    byte ptr [r13+0Ah], 4
+    fffff806`496a949c 0f85c0030000   jne     ntkrnlmp!MiCreateImageFileMap+0x586 (fffff806496a9862)
+    fffff806`496a94a2 498b5518       mov     rdx, qword ptr [r13+18h]                                           // rdx = file_start_addr
+    fffff806`496a94a6 b84d5a0000     mov     eax, 5A4Dh
+    fffff806`496a94ab 488955a0       mov     qword ptr [rbp-60h], rdx
+    fffff806`496a94af 663902         cmp     word ptr [rdx], ax
+    fffff806`496a94b2 0f85fe030000   jne     ntkrnlmp!MiCreateImageFileMap+0x5da (fffff806496a98b6)
+    fffff806`496a94b8 8b4a3c         mov     ecx, dword ptr [rdx+3Ch]                                           // ecx = e_lfanew
+    fffff806`496a94bb 894c2470       mov     dword ptr [rsp+70h], ecx
+    fffff806`496a94bf 8d8108010000   lea     eax, [rcx+108h]
+    fffff806`496a94c5 3bc1           cmp     eax, ecx
+    fffff806`496a94c7 0f86b5181800   jbe     ntkrnlmp!MiCreateImageFileMap+0x181aa6 (fffff8064982ad82)
+    fffff806`496a94cd 4c8b7580       mov     r14, qword ptr [rbp-80h]
+    fffff806`496a94d1 488d8108010000 lea     rax, [rcx+108h]
+    fffff806`496a94d8 448be9         mov     r13d, ecx                                                          // r13d = e_lfanew
+    fffff806`496a94db 493bc6         cmp     rax, r14
+    fffff806`496a94de 0f87b3181800   ja      ntkrnlmp!MiCreateImageFileMap+0x181abb (fffff8064982ad97)
+    fffff806`496a94e4 48c1e70c       shl     rdi, 0Ch
+    fffff806`496a94e8 48c7c100f0ffff mov     rcx, 0FFFFFFFFFFFFF000h
+    fffff806`496a94ef 41b800200000   mov     r8d, 2000h
+    fffff806`496a94f5 483bc7         cmp     rax, rdi
+    fffff806`496a94f8 0f87ae181800   ja      ntkrnlmp!MiCreateImageFileMap+0x181ad0 (fffff8064982adac)
+    fffff806`496a94fe 493bc1         cmp     rax, r9
+    fffff806`496a9501 0f87f7191800   ja      ntkrnlmp!MiCreateImageFileMap+0x181c22 (fffff8064982aefe)
+    fffff806`496a9507 4a8d3c2a       lea     rdi, [rdx+r13]                                                     // rdi = file_start_addr + e_lfanew
+    fffff806`496a950b 4d2bcd         sub     r9, r13                                                            // r9 = 0000000000000FFE
+    fffff806`496a950e 488b4c2478     mov     rcx, qword ptr [rsp+78h]                                           // rcx = address of some kind of structure probably
+    fffff806`496a9513 4c8bc2         mov     r8, rdx                                                            // r8 = file_start_addr
+    fffff806`496a9516 488bd7         mov     rdx, rdi                                                           // rdx = file_start_addr + e_lfanew
+    fffff806`496a9519 e8ea090000     call    ntkrnlmp!MiVerifyImageHeader (fffff806496a9f08)
+
+    ntkrnlmp!MiVerifyImageHeader:
+        fffff806`496a9f08 48895c2408     mov     qword ptr [rsp+8], rbx                                         // rbx = old stack pointer
+        fffff806`496a9f0d 4889742410     mov     qword ptr [rsp+10h], rsi                                       // Area on stack is now zeroed, or something?
+        fffff806`496a9f12 57             push    rdi                                                            // [rsp] = file_start_addr + e_lfanew
+        fffff806`496a9f13 4883ec20       sub     rsp, 20h                                                       // Make space for locals
+        fffff806`496a9f17 4c8bd2         mov     r10, rdx                                                       // r10 = file_start_addr + e_lfanew
+        fffff806`496a9f1a 498bc0         mov     rax, r8                                                        // rax = file_start_addr
+        fffff806`496a9f1d 488bd1         mov     rdx, rcx                                                       // rdx = address of some kind of structure, probably
+        fffff806`496a9f20 41f6c203       test    r10b, 3                                                        // Is file_start_addr + e_lfanew aligned to 4 byte boundary?
+        fffff806`496a9f24 0f85fe161800   jne     ntkrnlmp!MiVerifyImageHeader+0x181720 (fffff8064982b628)       // If not, error.
+
+        - JUMP TAKEN (ERROR PATH) -
+

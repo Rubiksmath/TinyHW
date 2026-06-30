@@ -1,0 +1,9 @@
+     1 00000000 6A00                    push 0;                                             ; Fifth argument, unused                
+     2 00000002 6A00                    push 0;                                             ; Fourth argument, unused
+     3 00000004 6A0E                    push 0xE;                                           ; Third argument, number of bytes to write (14)
+     4 00000006 67668D411E              lea eax, [ecx + 30];                ; Calculate second argument, pointer to string
+     5 0000000B 6650                    push eax;                                           ; Push it
+     6 0000000D 67668B4310              mov eax, [ebx + 0x10];                              ; Getting address of PEB
+     7 00000012 67FF701C                push [eax + 0x1C];                                  ; Push offset 0x1C as this is the handle we want
+     8 00000016 67FF515A                call [ecx + 90];    ; Call WriteFile using relative address from ecx
+     9 0000001A C3                      ret;                                                ; Exit safely to prevent errors being thrown     

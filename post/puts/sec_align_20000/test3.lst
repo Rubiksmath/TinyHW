@@ -1,0 +1,224 @@
+     1                                  BITS 32
+     2                                  
+     3                                  IMAGE_BASE equ 0x400000
+     4                                  org 0
+     5                                  
+     6                                  %define align(n, r) (((n+(r-1))/r)*r)
+     7                                  
+     8                                  ; DOS header
+     9                                  DOS_HEADER:
+    10 00000000 4D5A                        dw "MZ"                 ; DOS Magic number
+    11                                      
+    12                                  
+    13                                  
+    14                                  ; Start of PE header
+    15                                  PE_HEADER:
+    16 00000002 50450000                    dw "PE", 0              ; PE signature "PE\0\0"
+    17                                  
+    18                                  ; Mandatory COFF/Image file header
+    19                                  COFF_FILE_HEADER:
+    20 00000006 4C01                        dw 0x14C                ; Machine (Intel 386)
+    21 00000008 0100                        dw 1                    ; NumberOfSections (1)
+    22 0000000A 09E0406A                    dd 0x6A40E009           ; TimeDateStamp (Sunday, 28.06.2026 08:49:13 UTC)
+    23 0000000E 00000000                    dd 0                    ; PointerToSymbolTable [0 for images]
+    24 00000012 00000000                    dd 0                    ; NumberOfSymbols [0 for images]
+    25 00000016 E000                        dw OPTIONAL_HEADER_SIZE ; SizeOfOptionalHeader (usually 0xE0 for this type of app cause 32 bit)
+    26 00000018 0301                        dw 0x103                ; Characteristics (0x01 -> No relocation info present; 0x02 -> executable file; 0x100 -> 32 bit machine)
+    27                                  
+    28                                  ; Mandatory image file "optional header"
+    29                                  IMAGE_OPTIONAL_HEADER:
+    30                                      ; Mandatory "optional header" standard fields
+    31 0000001A 0B01                        dw 0x10B                ; Magic number (indicates PE32)
+    32 0000001C 0E                          db 0xE                  ; MajorLinkerVersion (14)
+    33 0000001D 21                          db 0x21                 ; MinorLinkerVersion (33)
+    34 0000001E 00020000                    dd CODE_SIZE            ; Total size of code sections (176 bytes)
+    35 00000022 00000000                    dd 0                    ; Total size of initialised data sections (16 bytes)
+    36 00000026 00000000                    dd 0                    ; Total size of uninitialised data sections (0 bytes)
+    37 0000002A 38000200                    dd 0x20038              ; RVA of entry point (Note: needs to be calculated carefully with respect to what is in the section headers. Address in file = RVA - VA + pointer to raw data in section header.)
+    38 0000002E 00000200                    dd 0x20000              ; RVA of beginning of code section when loaded
+    39 00000032 00000400                    dd 0x40000              ; RVA of beginning of data section when loaded
+    40                                  
+    41                                      ; Mandatory Windows-specific "optional header" fields
+    42                                  
+    43 00000036 00004000                    dd IMAGE_BASE           ; My funny preferred base of image
+    44 0000003A 00000200                    dd 0x20000              ; Alignment of sections when loaded into memory
+    45                                  
+    46                                  ; End of DOS header
+    47                                  
+    48 0000003E 00000100                    dd 0x10000              ; Alignment of raw data of sections when loaded into memory (honestly not sure on the difference)
+    49                                                              ; Listed requirements for these two fields are: SectionAlignment >= FileAlignment, FileAlignment must be power of 2, and if SectionAlignment is < page size, then FileAlignment == SectionAlignment.
+    50                                                              ; To be honest, if the loader patches something in to fix these fields when I go to overlap these stuff that would be funny.
+    51 00000042 0600                        dw 6                    ; Major operating system version (indicates Windows Vista/Server 2008)
+    52 00000044 0000                        dw 0                    ; Minor operating system version
+    53 00000046 0000                        dw 0                    ; Major image version
+    54 00000048 0000                        dw 0                    ; Minor image version
+    55 0000004A 0600                        dw 6                    ; Major subsystem version
+    56 0000004C 0000                        dw 0                    ; Minor subsystem version
+    57 0000004E 00000000                    dd 0                    ; Reserved field for Win32 version value, though it is claimed this must be 0.
+    58 00000052 00000400                    dd 0x40000              ; Size of image total when loaded into memory. Claimed that this must be a multiple of section alignment. 
+    59                                                              ; In reality it seems that it can be whatever you want provided it's larger than perhaps size of code or something?
+    60 00000056 00020000                    dd 0x200                ; Size of headers total in the file, rounded up to a multiple of FileAlignment
+    61 0000005A 00000000                    dd 0                    ; Checksum, seemingly unused
+    62 0000005E 0300                        dw 3                    ; Subsystem, 3 indicates Windows CUI
+    63 00000060 0085                        dw 0x8500               ; DLL Characterstics, (0x8000 -> TerminalServer aware, 0x400 -> Image does not use SEH, 0x100 -> Image is NX compatible)
+    64 00000062 00001000                    dd 0x100000             ; Size of stack reserve, some sort of something idk
+    65 00000066 00100000                    dd 0x1000               ; Size of stack commit
+    66 0000006A 00001000                    dd 0x100000             ; Size of heap reserve
+    67 0000006E 00100000                    dd 0x1000               ; Size of heap commit
+    68 00000072 00000000                    dd 0                    ; Loader flags, apparently must be 0
+    69 00000076 10000000                    dd 0x10                 ; Number of entries in the data directory table, here 16 as per default.
+    70                                  
+    71                                      ; Optional header data directories
+    72                                  
+    73 0000007A 00000000                    dd 0                    ; Export table RVA
+    74 0000007E 00000000                    dd 0                    ; Export table size
+    75                                                              ; .edata section apparently
+    76 00000082 4C000200                    dd 0x2004C              ; Import table RVA
+    77 00000086 28000000                    dd IMPORT_DIRECTORY_SIZE; Import table size
+    78                                                              ; .idata section apparently
+    79 0000008A 00000000                    dd 0                    ; Resource directory RVA
+    80 0000008E 00000000                    dd 0                    ; Resource directory size
+    81                                                              ; .rsrc section apparently
+    82 00000092 00000000                    dd 0                    ; Exception table RVA
+    83 00000096 00000000                    dd 0                    ; Exception table size
+    84                                                              ; .pdata section apparently
+    85 0000009A 00000000                    dd 0                    ; Certificate table RVA
+    86 0000009E 00000000                    dd 0                    ; Certificate table size
+    87                                                              ; Attribute Certificate Table apparently
+    88 000000A2 00000000                    dd 0                    ; Relocation table RVA
+    89 000000A6 00000000                    dd 0                    ; Relocation table size
+    90                                                              ; .reloc section apparently
+    91 000000AA 00000000                    dd 0                    ; Debug data RVA
+    92 000000AE 00000000                    dd 0                    ; Debug data size
+    93                                                              ; .debug section apparently
+    94 000000B2 00000000                    dd 0                    ; Architecture specific data RVA
+    95 000000B6 00000000                    dd 0                    ; Architecture specific data size
+    96                                                              ; Reserved and apparently must be 0, though it still worked but meh whatever.
+    97 000000BA 00000000                    dd 0                    ; Global pointer register value RVA
+    98 000000BE 00000000                    dd 0                    ; Global pointer register value size, must be 0
+    99                                  
+   100 000000C2 00000000                    dd 0                    ; Thread local storage table RVA
+   101 000000C6 00000000                    dd 0                    ; Thread local storage table size
+   102                                                              ; .tls section apparently
+   103 000000CA 00000000                    dd 0                    ; Load configuration table RVA
+   104 000000CE 00000000                    dd 0                    ; Load configuration table size
+   105                                                              ; Load configuration structure apparently
+   106 000000D2 00000000                    dd 0                    ; Bound import table RVA
+   107 000000D6 00000000                    dd 0                    ; Bound import table size
+   108                                  
+   109 000000DA 00000200                    dd 0x20000              ; Import address table RVA
+   110 000000DE 08000000                    dd IATBL_SIZE           ; Import address table size
+   111                                                              ; Note that the import address table is the region that gets patched by the loader for if function calls are straight jumps or something.
+   112 000000E2 00000000                    dd 0                    ; Delay import descriptor RVA
+   113 000000E6 00000000                    dd 0                    ; Delay import descriptor size
+   114                                                              ; Delay-Load Import Tables apparently
+   115 000000EA 00000000                    dd 0                    ; CLR runtime header RVA
+   116 000000EE 00000000                    dd 0                    ; CLR runtime header size
+   117                                                              ; .cormeta section apparently
+   118 000000F2 0000000000000000            dq 0                    ; Reserved, apparently
+   119                                  
+   120                                      ; End of PE header
+   121                                  
+   122                                  OPTIONAL_HEADER_SIZE equ $ - IMAGE_OPTIONAL_HEADER
+   123                                  
+   124                                  ; Section table
+   125                                  SECTION_TABLE:
+   126 000000FA 2E6D61696E000000            db ".main", 0, 0, 0     ; Name of first section, padded to 8 bytes
+   127 00000102 A4000000                    dd MAIN_SIZE            ; Virtual size of section when loaded into memory. If this is larger than the size of the raw data of the section, this gets zero padded.
+   128 00000106 00000200                    dd 0x20000              ; Virtual address of section when loaded into memory, i.e. the offset from image base when loaded
+   129 0000010A 00020000                    dd CODE_SIZE            ; Size of the initialised data on disk for this section. Must be a multiple of file alignment from the optional header (wut), and this parameter is rounded, while virtual size is not.
+   130                                                              ; Looks like it just has to be at least virtual size idk
+   131 0000010E [00020000]                  dd IMPORT_ADDRESS_TABLE ; File pointer to the first page of the section
+   132 00000112 00000000                    dd 0                    ; Pointer to relocations
+   133 00000116 00000000                    dd 0                    ; Pointer to line numbers
+   134 0000011A 0000                        dw 0                    ; Number of relocations
+   135 0000011C 0000                        dw 0                    ; Number of line numbers
+   136 0000011E 20000060                    dd 0x60000020           ; Section characteristics (0x20 -> contains executable code; 0x20000000 -> can be executed as code; 0x40000000 -> can be read)
+   137                                  
+   138 00000122 00<rep DEh>             times align($ - $$, 512) - ($ - $$) db 0; Padding to end of "section"
+   139                                  
+   140                                  HEADER_SIZE equ $ - $$
+   141                                  
+   142                                  ; Start of code
+   143                                  CODE:
+   144                                  
+   145                                  ; Import address table
+   146                                  IMPORT_ADDRESS_TABLE:
+   147                                                              ; Structure and content of import address table is identical to the import lookup table until the file is bound by the loader. 
+   148                                                              ; The addresses here get patched to the memory addresses of the imported symbols.
+   149 00000200 [7C020000]                  dd HINT_NAME_TABLE      ; RVA of the entry into the hint/name table for this import
+   150 00000204 00000000                    dd 0                    ; Null terminator entry
+   151                                  
+   152                                  IATBL_SIZE equ $ - IMPORT_ADDRESS_TABLE
+   153                                  
+   154                                  ; Initialised data store
+   155                                  DATA:
+   156 00000208 48656C6C6F2C20576F-         db "Hello, World!", 0   ; String to print
+   156 00000211 726C642100         
+   157                                  
+   158 00000216 0000                        dw 0                    ; Padding?
+   159                                  
+   160                                      ; Weird data that I don't know what it is doing
+   161 00000218 18000000                    dd 0x18                 ;
+   162 0000021C 02800280                    dd 0x80028002           ;
+   163 00000220 00000000                    dd 0                    ;
+   164 00000224 00000000                    dd 0                    ;
+   165 00000228 30000200                    dd 0x20030              ;
+   166 0000022C 08000000                    dd 8                    ;
+   167 00000230 08000200                    dd 0x20008              ;
+   168 00000234 3C000000                    dd 0x3C                 ;
+   169                                  
+   170                                  ; Entry point
+   171                                  ENTRY_POINT:
+   172 00000238 6808004200                  push 0x420008           ; Push address of string to print
+   173 0000023D E8(44020000)                call 0x244              ; Dunno why, but it's doing this weird call to an address that then jumps
+   174 00000242 59                          pop ecx                 ; Align stack?
+   175 00000243 C3                          ret                     ; Done
+   176                                  
+   177                                      ; 0x420044;
+   178                                  
+   179 00000244 FF2500004200                jmp [0x420000]          ; Jump to puts
+   180 0000024A CC<rep 2h>                  times 2 int3            ; Debugger padding
+   181                                  
+   182                                  ; Import directory/table
+   183                                  IMPORT_DIRECTORY:
+   184                                                              ; Entry 1 (api-ms-win-crt-stdio-l1-1-0.dll)
+   185 0000024C 74000200                    dd 0x20074              ; RVA of import lookup table for entry 1 (place to look for data)
+   186 00000250 00000000                    dd 0                    ; Zeroed Time/Date stamp for use as loader patches it
+   187 00000254 00000000                    dd 0                    ; Forwarder chain, whatever that means
+   188 00000258 84000200                    dd 0x20084              ; RVA of a string containing the DLL name for this import
+   189 0000025C 00000200                    dd 0x20000              ; RVA of import address table for entry 1 (place to write the results to)
+   190 00000260 00000000<rep 5h>            times 5 dd 0            ; Pad with null entry to signify end of table
+   191                                  
+   192                                  IMPORT_DIRECTORY_SIZE equ $ - IMPORT_DIRECTORY
+   193                                  
+   194                                  ; Import lookup table for the first DLL
+   195                                  IMPORT_LOOKUP_TABLE_1:
+   196 00000274 7C000200                    dd 0x2007C              ; RVA of the hint/name table entry for this import, with MSB set to 0 to indicate import by name
+   197 00000278 00000000                    dd 0                    ; Null terminator entry
+   198                                  
+   199                                  ; Hint/name table
+   200                                  HINT_NAME_TABLE:
+   201                                                              ; Entry 1 (puts)
+   202 0000027C 9300                        dw 0x93                 ; Function ordinal (loader attempts to match this first)
+   203 0000027E 707574730000                db "puts", 0, 0         ; Function name (loader only uses if match fails)
+   204                                  
+   205                                  ; Name of DLL 1
+   206                                  
+   207                                  DLL_NAME_1:
+   208 00000284 6170692D6D732D7769-         db "api-ms-win-crt-stdio-l1-1-0.dll", 0    ; Name of DLL 1 from the import directory/table
+   208 0000028D 6E2D6372742D737464-
+   208 00000296 696F2D6C312D312D30-
+   208 0000029F 2E646C6C00         
+   209                                  
+   210                                  MAIN_SIZE equ $ - CODE
+   211                                  
+   212 000002A4 00<rep 15Ch>            times align($ - $$, 512) - ($ - $$) db 0; Padding to end of section
+   213                                  
+   214                                  CODE_SIZE equ $ - CODE
+   215                                  
+   216                                  FILE_SIZE equ $ - $$
+   217                                  
+   218                                      
+   219                                  
+   220                                      

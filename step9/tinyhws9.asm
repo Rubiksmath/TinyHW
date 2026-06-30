@@ -30,11 +30,10 @@ CODE_FRAGMENT_2:
     push eax;               ; [UNUSED/FREE] Initial stack segment value (relative) part 2
                                                                                     ; [UNUSED/FREE] TimeDateStamp part 3
                                                                                                                                 ; Push it
-    
     mov eax, [ebx + 0x10];  ; [UNUSED/FREE] Initial stack pointer value (relative)  ; [UNUSED/FREE] PointerToSymbolTable part 1
                             ; [UNUSED/FREE] Checksum part 1                         ; [UNUSED/FREE] PointerToSymbolTable part 2 
                                                                                                                                 ; Calculating handle by looking into PEB idk I just copied the implementation of the kernel DLL don't ask
-    push [eax + 0x1C];      ; Checksum part 2                                       ; [UNUSED/FREE] PointerToSymbolTable part 3
+    push [eax + 0x1C];      ; [UNUSED/FREE] Checksum part 2                         ; [UNUSED/FREE] PointerToSymbolTable part 3
                             ; [UNUSED/FREE] Initial instruction pointer value       ; [UNUSED/FREE] NumberOfSymbols part 1
                                                                                                                                 ; First argument to WriteFile, the handle of the "file" or "stream" to write to
 
@@ -122,7 +121,7 @@ IMPORT_ADDRESS_TABLE:
 
 ; Import directory
 IMPORT_DIRECTORY:
-                            ; Entry 1 (KERNEL32.DLL)
+                            ; Entry 1 (KERNEL32.dll)
 ; Hint/name table
 HINT_NAME_TABLE:
                             ; Entry 1 (WriteFile)
@@ -140,11 +139,11 @@ SECTION_TABLE:
                                                                                     ; Function name (loaded only uses if match fails) part 2                    ; [UNUSED/FREE] Zeroed Time/Date stamp for use as loader patches it              
     db "ile", 0             ; [UNUSED/FREE] Name of first section, padded to 8 bytes part 2
                                                                                     ; Function name (loaded only uses if match fails) part 3                    ; [UNUSED/FREE] Forwarder chain, whatever that means                                                                                    
-    dd DLL_NAME_1           ; [RESTRICTED BUT MODIFIABLE] Virtual size of section when loaded into memory. 
+    dd DLL_NAME_1           ; [RESTRICTED BUT MODIFIABLE] Virtual size of section when loaded into memory.                                                      ; RVA of string containing DLL name
                             ; If this is larger than the size of the raw data of the section, this gets zero padded.
                             ; (don't go too big, i.e. seems like the limit is 0xF10, or something.)
                                                                                     
-    dd IMPORT_ADDRESS_TABLE ; [IN PRINCIPLE MODIFIABLE] Virtual address of section when loaded into memory, i.e. the offset from image base when loaded
+    dd IMPORT_ADDRESS_TABLE ; [IN PRINCIPLE MODIFIABLE] Virtual address of section when loaded into memory, i.e. the offset from image base when loaded         ; RVA of import address table for entry 1 (place to write the results to)
                                                                                     
     dd 0xF0                 ; [RESTRICTED BUT MODIFIABLE] Size of the initialised data on disk for this section. Must be a multiple of file alignment from the optional header (wut), and this parameter is rounded, while virtual size is not.
                             ; Looks like it just has to be at least virtual size idk (It let me go as low as 0x41, and also up very high up to 0xFFFFFF0F, provided the virtualsize was not 0. When virtual size was 0, the size of this was much more limited)
