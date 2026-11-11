@@ -112,7 +112,7 @@ IMPORT_DIRECTORY:
                             
 
     ; End of PE header
-
+ 
 OPTIONAL_HEADER_SIZE equ $ - IMAGE_OPTIONAL_HEADER
 
 ; Section table
@@ -124,20 +124,22 @@ SECTION_TABLE:
 
 IMPORT_ADDRESS_TABLE:
     dd HINT_NAME_TABLE      ; [RESTRICTED BUT MODIFIABLE] Virtual size of section when loaded into memory (don't go too big or something)
-                                                                                    ; Pad with null entry to signify end of table part 1 (0 not enforced)
+                                                                                    ; Pad with null entry to signify end of table field 1 (0 not enforced)
                                                                                                                                 ; RVA of the entry into the hint/name table for this import
     dd 0                    ; Virtual address of section when loaded into memory, i.e. the offset from image base when loaded
-                                                                                    ; Pad with null entry to signify end of table part 2 (0 not enforced)
+                                                                                    ; Pad with null entry to signify end of table field 2 (0 not enforced)
                                                                                                                                 ; Null terminator entry (enforced 0)
-    dd 129                  ; [RESTRICTED BUT MODIFIABLE] Size of the initialised data on disk for this section (can't go too small)
+    db 129                  ; [RESTRICTED BUT MODIFIABLE] Size of the initialised data on disk for this section part 1 (can't go too small)
                             ; Looks like it just has to be at least address of import address table + 1
-                                                                                    ; Pad with null entry to signify end of table part 3 (0 not enforced)
+                                                                                    ; Pad with null entry to signify end of table field 3 part 1 (0 not enforced)
 
 times align ($ - $$, 268) - ($ - $$) db 0;
-                            ; Pad to minimum of 268 part 1                          ; File pointer to the first page of the section         
-                                                                                                                                ; Pad with null entry to signify end of table part 4 (enforced 0)
-                            ; Pad to minimum of 268 part 2                          ; [UNUSED/FREE] Pointer to relocations      ; Pad with null entry to signify end of table part 5 (enforced 0)
-                            ; Pad to minimum of 268 part 3                          ; [UNUSED/FREE] Pointer to line numbers
-                            ; Pad to minimum of 268 part 4                          ; [UNUSED/FREE] Number of relocations
-                            ; Pad to minimum of 268 part 5                          ; [UNUSED/FREE] Number of line numbers
-                            ; Pad to minimum of 268 part 6                          ; [UNUSED/FREE] Section characteristics
+                            ; Pad to minimum of 268 part 1                          ; [RESTRICTED BUT MODIFIABLE] Size of the initialised data on disk for this section part 2 (can't go too small)
+                                                                                                                                ; Pad with null entry to signify end of table field 3 part 2 (0 not enforced)
+                            ; Pad to minimum of 268 part 2                          ; File pointer to the first page of the section         
+                                                                                                                                ; Pad with null entry to signify end of table field 4 (enforced 0)
+                            ; Pad to minimum of 268 part 3                          ; [UNUSED/FREE] Pointer to relocations      ; Pad with null entry to signify end of table field 5 (enforced 0)
+                            ; Pad to minimum of 268 part 4                          ; [UNUSED/FREE] Pointer to line numbers
+                            ; Pad to minimum of 268 part 5                          ; [UNUSED/FREE] Number of relocations
+                            ; Pad to minimum of 268 part 6                          ; [UNUSED/FREE] Number of line numbers
+                            ; Pad to minimum of 268 part 7                          ; [UNUSED/FREE] Section characteristics
