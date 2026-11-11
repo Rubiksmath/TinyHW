@@ -130,7 +130,7 @@ IMPORT_ADDRESS_TABLE:
                                                                                     ; Pad with null entry to signify end of table field 2 (0 not enforced)
                                                                                                                                 ; Null terminator entry (enforced 0)
     db 129                  ; [RESTRICTED BUT MODIFIABLE] Size of the initialised data on disk for this section part 1 (can't go too small)
-                            ; Looks like it just has to be at least address of import address table + 1
+                            ; Looks like it just has to be at least address of import address table + 1 (or import directory table? I forgot, but in this case it matches IDT + 1 and it wouldn't let me make it smaller. Could be coincidence.)
                                                                                     ; Pad with null entry to signify end of table field 3 part 1 (0 not enforced)
 
 times align ($ - $$, 268) - ($ - $$) db 0;
